@@ -82,13 +82,22 @@ class InterfaceRepositorio(Generic[T]):
             x = self.getValuesDBRef(x)
             data.append(x)
         return data
-
+    def queryAggregation(self, theQuery):
+        laColeccion = self.baseDatos[self.coleccion]
+        data = []
+        for x in laColeccion.aggregate(theQuery):
+            x["_id"] = x["_id"].__str__()
+            x = self.transformObjectIds(x)
+            x = self.getValuesDBRef(x)
+            data.append(x)
+        return data
 
 
     def getValuesDBRef(self, x):
         keys = x.keys()
         for k in keys:
             if isinstance(x[k], DBRef):
+
                 laColeccion = self.baseDatos[x[k].collection]
                 valor = laColeccion.find_one({"_id": ObjectId(x[k].id)})
                 valor["_id"] = valor["_id"].__str__()
@@ -96,6 +105,8 @@ class InterfaceRepositorio(Generic[T]):
                 x[k] = self.getValuesDBRef(x[k])
             elif isinstance(x[k], list) and len(x[k]) > 0:
                 x[k] = self.getValuesDBRefFromList(x[k])
+            elif isinstance(x[k], dict) :
+                x[k] = self.getValuesDBRef(x[k])
         return x
 
     def getValuesDBRefFromList(self, theList):
@@ -112,6 +123,8 @@ class InterfaceRepositorio(Generic[T]):
                 x[attribute] = x[attribute].__str__()
             elif isinstance(x[attribute], list):
                 x[attribute] = self.formatList(x[attribute])
+            elif  isinstance(x[attribute], dict):
+                x[attribute]=self.transformObjectIds(x[attribute])
         return x
     def formatList(self, x):
         newList = []
